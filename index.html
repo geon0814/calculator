@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>정산 계산기</title>
+  <style>
+    :root {
+      --bg: #F8FAFC;
+      --card: #FFFFFF;
+      --primary: #2563EB;
+      --primary-hover: #1D4ED8;
+      --primary-light: #EFF6FF;
+      --border: #E2E8F0;
+      --text: #1E293B;
+      --muted: #64748B;
+      --red: #EF4444;
+      --red-bg: #FEF2F2;
+      --shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    [data-theme="dark"] {
+      --bg: #0F172A;
+      --card: #1E293B;
+      --primary: #3B82F6;
+      --primary-hover: #2563EB;
+      --primary-light: #1E3A5F;
+      --border: #334155;
+      --text: #F1F5F9;
+      --muted: #94A3B8;
+      --red-bg: #3B1111;
+      --shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px 16px 60px;
+      transition: background .3s, color .3s;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 560px;
+      margin: 0 auto 22px;
+    }
+    .header h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+
+    .icon-btn {
+      height: 34px;
+      padding: 0 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      background: var(--card);
+      color: var(--muted);
+      font-size: 0.78rem; font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color .15s;
+      white-space: nowrap;
+    }
+    .icon-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      max-width: 560px;
+      margin: 0 auto 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .tab-btn {
+      flex: 1; padding: 9px 0;
+      border: none; border-radius: 9px;
+      background: none; color: var(--muted);
+      font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; transition: all .2s;
+    }
+    .tab-btn.active { background: var(--primary); color: #fff; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      max-width: 560px;
+      margin: 0 auto 12px;
+      box-shadow: var(--shadow);
+    }
+
+    /* ── Mode toggle ── */
+    .mode-row {
+      display: flex; gap: 5px;
+      background: var(--bg);
+      border-radius: 10px; padding: 4px;
+      margin-bottom: 20px;
+    }
+    .mode-btn {
+      flex: 1; padding: 8px 0;
+      border: none; border-radius: 7px;
+      background: none; color: var(--muted);
+      font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; transition: all .2s;
+    }
+    .mode-btn.active {
+      background: var(--card);
+      color: var(--primary);
+      box-shadow: var(--shadow);
+    }
+
+    /* ── Form ── */
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 0.77rem; font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase; letter-spacing: .04em;
+      margin-bottom: 5px;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-size: 0.95rem;
+      background: var(--bg);
+      color: var(--text);
+      transition: border .15s;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--primary); }
+    input.err { border-color: var(--red); }
+
+    .err-msg {
+      font-size: 0.75rem; color: var(--red);
+      margin-top: 4px; display: none;
+    }
+    .err-msg.show { display: block; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── Person / Ratio rows ── */
+    .person-row {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr 34px;
+      gap: 7px; align-items: center;
+      margin-bottom: 7px;
+    }
+    .ratio-row {
+      display: grid;
+      grid-template-columns: 1fr 90px 34px;
+      gap: 7px; align-items: center;
+      margin-bottom: 7px;
+    }
+    .person-row input, .ratio-row input { margin: 0; }
+    .ratio-pct { font-size: 0.85rem; color: var(--muted); padding-left: 2px; }
+
+    .del-btn {
+      width: 34px; height: 38px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--muted);
+      font-size: 0.85rem;
+      cursor: pointer; transition: all .15s;
+    }
+    .del-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+
+    .add-btn {
+      width: 100%; padding: 9px;
+      border: 1.5px dashed var(--border);
+      border-radius: 9px;
+      background: none; color: var(--muted);
+      font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; margin-top: 6px;
+      transition: all .15s;
+    }
+    .add-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── OCR zone ── */
+    .ocr-zone {
+      border: 1.5px dashed var(--border);
+      border-radius: 10px;
+      padding: 16px 12px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 18px;
+      transition: all .2s;
+    }
+    .ocr-zone:hover, .ocr-zone.drag-over {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .ocr-zone p { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+    .ocr-status {
+      font-size: 0.78rem; color: var(--primary);
+      text-align: center; padding: 6px 0; display: none;
+    }
+
+    /* ── Ratio sum display ── */
+    .ratio-sum {
+      text-align: right;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .ratio-sum.over { color: var(--red); }
+
+    /* ── Calc button ── */
+    .calc-btn {
+      width: 100%; padding: 12px;
+      background: var(--primary);
+      color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 0.95rem; font-weight: 700;
+      cursor: pointer; margin-top: 18px;
+      transition: background .15s;
+    }
+    .calc-btn:hover { background: var(--primary-hover); }
+
+    /* ── Result ── */
+    .result {
+      margin-top: 16px;
+      display: none;
+      animation: fadeUp .25s ease;
+    }
+    .result.show { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-box {
+      background: var(--primary-light);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      font-size: 0.88rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .result-row:last-child { border-bottom: none; }
+    .result-row .lbl { color: var(--muted); }
+    .result-row .val { font-weight: 600; }
+
+    .settle-title {
+      font-size: 0.75rem; font-weight: 700;
+      color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
+      margin: 14px 0 8px;
+    }
+
+    .txn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .txn:last-child { border-bottom: none; }
+    .txn .arrow { color: var(--primary); font-weight: 700; flex-shrink: 0; }
+    .txn .amt {
+      margin-left: auto;
+      background: var(--primary);
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem; font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .result-actions {
+      display: flex; gap: 8px; margin-top: 12px;
+    }
+    .result-actions button {
+      flex: 1; padding: 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: all .15s;
+    }
+    .result-actions button:hover { border-color: var(--primary); color: var(--primary); }
+    .result-actions button.done { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* ── Menu detail ── */
+    .menu-toggle-btn {
+      width: 100%; padding: 9px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--card);
+      color: var(--muted);
+      font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; margin-top: 10px;
+      transition: all .15s;
+      text-align: left;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .menu-toggle-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .menu-toggle-btn .chevron { transition: transform .2s; font-style: normal; }
+    .menu-toggle-btn.open .chevron { transform: rotate(180deg); }
+
+    .menu-list {
+      display: none;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px 14px;
+      margin-top: 6px;
+    }
+    .menu-list.open { display: block; animation: fadeUp .2s ease; }
+
+    .menu-item {
+      display: flex; justify-content: space-between;
+      padding: 5px 0;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item .m-name { color: var(--text); }
+    .menu-item .m-price { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    .ocr-notice {
+      font-size: 0.72rem; color: var(--muted);
+      margin-top: 6px; text-align: center;
+      display: none;
+    }
+    .ocr-notice.show { display: block; }
+
+    .menu-include-row {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 0 2px;
+      font-size: 0.8rem; color: var(--muted);
+    }
+    .menu-include-row input[type="checkbox"] {
+      width: 15px; height: 15px;
+      margin: 0; padding: 0;
+      accent-color: var(--primary);
+    }
+
+    /* ── GPA ── */
+    .subj-header {
+      display: grid;
+      grid-template-columns: 1fr 65px 88px 34px;
+      gap: 7px; margin-bottom: 6px;
+    }
+    .subj-header span {
+      font-size: 0.75rem; color: var(--muted); font-weight: 700;
+      text-align: center;
+    }
+    .subj-header span:first-child { text-align: left; }
+
+    .subj-row {
+      display: grid;
+      grid-template-columns: 1fr 65px 88px 34px;
+      gap: 7px; align-items: center; margin-bottom: 7px;
+    }
+    .subj-row input, .subj-row select { margin: 0; padding: 9px 10px; }
+
+    .gpa-big {
+      text-align: center; padding: 18px 0 10px;
+    }
+    .gpa-num {
+      font-size: 3.2rem; font-weight: 800;
+      color: var(--primary); line-height: 1;
+    }
+    .gpa-denom { font-size: 1rem; color: var(--muted); margin-top: 2px; }
+    .gpa-badge {
+      display: inline-block;
+      padding: 3px 14px; border-radius: 20px;
+      font-size: 0.8rem; font-weight: 700; margin-top: 8px;
+    }
+    .grade-A { background: #DBEAFE; color: #1D4ED8; }
+    .grade-B { background: #DCFCE7; color: #15803D; }
+    .grade-C { background: #FEF9C3; color: #854D0E; }
+    .grade-D { background: #FEE2E2; color: #991B1B; }
+    .grade-F { background: var(--border); color: var(--muted); }
+
+    .divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+    /* ── Settings modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 16px;
+      display: none;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%; max-width: 440px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    }
+    .modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .modal p  { font-size: 0.8rem; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .modal-actions button {
+      flex: 1; padding: 10px;
+      border-radius: 9px; font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; border: 1.5px solid var(--border);
+      background: var(--bg); color: var(--text); transition: all .15s;
+    }
+    .modal-actions .btn-confirm {
+      background: var(--primary); color: #fff; border-color: var(--primary);
+    }
+    .api-key-hint {
+      font-size: 0.75rem; color: var(--muted); margin-top: 6px; line-height: 1.5;
+    }
+    .api-key-hint a { color: var(--primary); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1E293B; color: #fff;
+      padding: 9px 20px; border-radius: 30px;
+      font-size: 0.83rem; font-weight: 600;
+      transition: transform .28s ease;
+      z-index: 999; pointer-events: none;
+    }
+    [data-theme="dark"] .toast { background: #F1F5F9; color: #1E293B; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    @media (max-width: 400px) {
+      .two-col { grid-template-columns: 1fr; }
+      .person-row { grid-template-columns: 1fr 1fr 34px; }
+      .subj-header, .subj-row { grid-template-columns: 1fr 52px 78px 30px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="header">
+  <h1>정산 계산기</h1>
+  <div style="display:flex;gap:7px;">
+    <button class="icon-btn" onclick="openSettings()">OCR 설정</button>
+    <button class="icon-btn" id="theme-btn" onclick="toggleTheme()">다크</button>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <h3>Google Cloud Vision API 키</h3>
+    <p>영수증 자동 인식에 사용됩니다. 키는 이 기기에만 저장되며 외부로 전송되지 않습니다.</p>
+    <label>API 키</label>
+    <input type="text" id="api-key-input" placeholder="AIza..." autocomplete="off" />
+    <div class="api-key-hint">
+      키 발급: <a href="https://console.cloud.google.com/apis/library/vision.googleapis.com" target="_blank">Google Cloud Console</a> → Vision API 사용 설정 → 사용자 인증 정보 → API 키 생성<br>
+      월 1,000회 무료 (개인 사용에 충분)
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeSettings()">취소</button>
+      <button class="btn-confirm" onclick="saveApiKey()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('dutch', this)">더치페이</button>
+  <button class="tab-btn" onclick="switchTab('gpa', this)">학점 계산기</button>
+</div>
+
+<!-- ── 더치페이 탭 ── -->
+<div id="tab-dutch" class="tab-content active">
+  <div class="card">
+    <div class="mode-row">
+      <button class="mode-btn active" id="m-simple" onclick="setMode('simple')">균등 분배</button>
+      <button class="mode-btn" id="m-custom" onclick="setMode('custom')">개별 입력</button>
+      <button class="mode-btn" id="m-ratio"  onclick="setMode('ratio')">비율 분배</button>
+    </div>
+
+    <!-- 균등 분배 -->
+    <div id="pane-simple">
+      <div class="ocr-zone" id="ocr-zone-simple"
+           onclick="document.getElementById('ocr-input').click()"
+           ondragover="ev.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleDrop(event,'simple')">
+        <p>영수증 사진 업로드 → 금액 자동 인식</p>
+      </div>
+      <input type="file" id="ocr-input" accept="image/*" style="display:none" onchange="handleOCRFile(this,'simple')">
+      <div class="ocr-status" id="ocr-status-simple"></div>
+
+      <div class="two-col">
+        <div class="field">
+          <label>총 금액 (원)</label>
+          <input type="number" id="s-total" placeholder="45000" oninput="saveState()" />
+          <div class="err-msg" id="e-total">금액을 입력해주세요</div>
+        </div>
+        <div class="field">
+          <label>인원수</label>
+          <input type="number" id="s-count" placeholder="3" min="1" oninput="saveState()" />
+          <div class="err-msg" id="e-count">인원수를 입력해주세요</div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:4px;">
+        <label>할인 / 쿠폰 (원)</label>
+        <input type="number" id="s-disc" placeholder="0" oninput="saveState()" />
+      </div>
+    </div>
+
+    <!-- 개별 입력 -->
+    <div id="pane-custom" style="display:none">
+      <div class="ocr-zone" id="ocr-zone-custom"
+           onclick="document.getElementById('ocr-input2').click()"
+           ondragover="ev.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleDrop(event,'custom')">
+        <p>영수증 사진 업로드 → 금액 자동 인식</p>
+      </div>
+      <input type="file" id="ocr-input2" accept="image/*" style="display:none" onchange="handleOCRFile(this,'custom')">
+      <div class="ocr-status" id="ocr-status-custom"></div>
+
+      <div id="person-list"></div>
+      <button class="add-btn" onclick="addPerson()">+ 사람 추가</button>
+      <div class="err-msg" id="e-persons" style="margin-top:6px;">이름과 금액을 입력해주세요</div>
+    </div>
+
+    <!-- 비율 분배 -->
+    <div id="pane-ratio" style="display:none">
+      <div class="ocr-zone" id="ocr-zone-ratio"
+           onclick="document.getElementById('ocr-input3').click()"
+           ondragover="ev.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleDrop(event,'ratio')">
+        <p>영수증 사진 업로드 → 금액 자동 인식</p>
+      </div>
+      <input type="file" id="ocr-input3" accept="image/*" style="display:none" onchange="handleOCRFile(this,'ratio')">
+      <div class="ocr-status" id="ocr-status-ratio"></div>
+
+      <div class="field">
+        <label>총 금액 (원)</label>
+        <input type="number" id="r-total" placeholder="45000" oninput="saveState(); updateRatioSum()" />
+        <div class="err-msg" id="e-rtotal">금액을 입력해주세요</div>
+      </div>
+      <div id="ratio-list" style="margin-top:14px;"></div>
+      <button class="add-btn" onclick="addRatio()">+ 사람 추가</button>
+      <div class="ratio-sum" id="ratio-sum">합계: 0%</div>
+    </div>
+
+    <button class="calc-btn" onclick="calcDutch()">계산하기</button>
+
+    <div class="result" id="dutch-result">
+      <div class="result-box" id="dutch-result-box"></div>
+      <button class="menu-toggle-btn" id="menu-toggle-btn" style="display:none" onclick="toggleMenuDetail()">
+        <span>주문 내역 보기</span><i class="chevron">∨</i>
+      </button>
+      <div class="menu-list" id="menu-list">
+        <div class="ocr-notice show" id="menu-notice">OCR 인식 결과로, 정확하지 않을 수 있습니다</div>
+        <div id="menu-items"></div>
+        <div class="menu-include-row">
+          <input type="checkbox" id="include-menu" />
+          <label for="include-menu" style="text-transform:none;letter-spacing:0;margin:0;font-size:0.8rem;">복사 시 주문 내역 포함</label>
+        </div>
+      </div>
+      <div class="result-actions">
+        <button id="copy-btn" onclick="copyResult()">복사</button>
+        <button id="share-btn" onclick="shareResult()">공유 링크</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 학점 계산기 탭 ── -->
+<div id="tab-gpa" class="tab-content">
+  <div class="card">
+    <div class="subj-header">
+      <span>과목명</span><span>학점</span><span>성적</span><span></span>
+    </div>
+    <div id="subject-list"></div>
+    <button class="add-btn" onclick="addSubject()">+ 과목 추가</button>
+    <button class="calc-btn" onclick="calcGPA()">계산하기</button>
+
+    <div class="result" id="gpa-result">
+      <div class="result-box" id="gpa-result-box"></div>
+      <div class="result-actions">
+        <button id="gpa-copy-btn" onclick="copyGPA()">복사</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────
+let mode = 'simple';
+let dutchResult = null;
+let gpaResult   = null;
+
+const GRADE = {
+  'A+':4.5,'A0':4.0,'A-':4.0,
+  'B+':3.5,'B0':3.0,'B-':3.0,
+  'C+':2.5,'C0':2.0,'C-':2.0,
+  'D+':1.5,'D0':1.0,'D-':1.0,
+  'F':0.0
+};
+
+// ─────────────────────────────────────────────
+// Theme
+// ─────────────────────────────────────────────
+function toggleTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+  document.getElementById('theme-btn').textContent = dark ? '다크' : '라이트';
+  localStorage.setItem('theme', dark ? 'light' : 'dark');
+}
+
+// ─────────────────────────────────────────────
+// Tab
+// ─────────────────────────────────────────────
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─────────────────────────────────────────────
+// Mode
+// ─────────────────────────────────────────────
+function setMode(m) {
+  mode = m;
+  ['simple','custom','ratio'].forEach(id => {
+    document.getElementById('pane-' + id).style.display = id === m ? 'block' : 'none';
+    document.getElementById('m-' + id).classList.toggle('active', id === m);
+  });
+  hideResult();
+  saveState();
+
+  if (m === 'custom' && document.getElementById('person-list').children.length === 0) {
+    addPerson(); addPerson(); addPerson();
+  }
+  if (m === 'ratio' && document.getElementById('ratio-list').children.length === 0) {
+    addRatio(); addRatio(); addRatio();
+  }
+}
+
+// ─────────────────────────────────────────────
+// Person rows
+// ─────────────────────────────────────────────
+function addPerson(name = '', amount = '') {
+  const list = document.getElementById('person-list');
+  const row = document.createElement('div');
+  row.className = 'person-row';
+  row.innerHTML = `
+    <input type="text"   placeholder="이름" value="${esc(name)}"   oninput="saveState()" />
+    <input type="number" placeholder="금액"  value="${esc(amount)}" oninput="saveState()" />
+    <button class="del-btn" onclick="this.closest('.person-row').remove(); saveState()">✕</button>
+  `;
+  list.appendChild(row);
+}
+
+function getPersons() {
+  return [...document.querySelectorAll('#person-list .person-row')].map(r => {
+    const inputs = r.querySelectorAll('input');
+    return { name: inputs[0].value.trim(), amount: parseFloat(inputs[1].value) || 0 };
+  });
+}
+
+// ─────────────────────────────────────────────
+// Ratio rows
+// ─────────────────────────────────────────────
+function addRatio(name = '', pct = '') {
+  const list = document.getElementById('ratio-list');
+  const row = document.createElement('div');
+  row.className = 'ratio-row';
+  row.innerHTML = `
+    <input type="text"   placeholder="이름" value="${esc(name)}" oninput="saveState()" />
+    <input type="number" placeholder="%" min="0" max="100" value="${esc(pct)}" oninput="updateRatioSum(); saveState()" />
+    <button class="del-btn" onclick="this.closest('.ratio-row').remove(); updateRatioSum(); saveState()">✕</button>
+  `;
+  list.appendChild(row);
+}
+
+function getRatios() {
+  return [...document.querySelectorAll('#ratio-list .ratio-row')].map(r => {
+    const inputs = r.querySelectorAll('input');
+    return { name: inputs[0].value.trim(), pct: parseFloat(inputs[1].value) || 0 };
+  });
+}
+
+function updateRatioSum() {
+  const sum = getRatios().reduce((a, r) => a + r.pct, 0);
+  const el = document.getElementById('ratio-sum');
+  el.textContent = `합계: ${sum.toFixed(1)}%`;
+  el.classList.toggle('over', sum > 100.05);
+}
+
+// ─────────────────────────────────────────────
+// Calculations
+// ─────────────────────────────────────────────
+function calcDutch() {
+  hideResult();
+
+  if (mode === 'simple') {
+    const total   = parseFloat(document.getElementById('s-total').value) || 0;
+    const count   = parseInt(document.getElementById('s-count').value)   || 0;
+    const disc    = parseFloat(document.getElementById('s-disc').value)  || 0;
+
+    let ok = true;
+    setErr('e-total', !total, 's-total');
+    setErr('e-count', !count || count < 1, 's-count');
+    if (!total || !count || count < 1) return;
+
+    const net = total - disc;
+    const perCeil  = Math.ceil(net / count);
+    const perFloor = Math.floor(net / count);
+
+    dutchResult = { mode: 'simple', total, count, disc, net, perCeil, perFloor };
+
+    let html = `
+      <div class="result-row"><span class="lbl">총 금액</span><span class="val">${fmt(total)}원</span></div>
+      ${disc > 0 ? `<div class="result-row"><span class="lbl">할인 후</span><span class="val">${fmt(net)}원</span></div>` : ''}
+      <div class="result-row"><span class="lbl">인원</span><span class="val">${count}명</span></div>
+      <div class="divider"></div>
+      <div class="result-row"><span class="lbl">1인 (올림)</span><span class="val" style="color:var(--primary);font-size:1.1rem">${fmt(perCeil)}원</span></div>
+      <div class="result-row"><span class="lbl">1인 (내림)</span><span class="val">${fmt(perFloor)}원</span></div>
+    `;
+    showDutchResult(html);
+
+  } else if (mode === 'custom') {
+    const persons = getPersons().filter(p => p.amount > 0 || p.name);
+    setErr('e-persons', persons.length < 2, null);
+    if (persons.length < 2) return;
+
+    const total = persons.reduce((s, p) => s + p.amount, 0);
+    const avg   = total / persons.length;
+
+    const balances = persons.map((p, i) => ({
+      name: p.name || `${i+1}번째`,
+      balance: p.amount - avg
+    }));
+
+    const txns = settle(balances);
+    dutchResult = { mode: 'custom', total, count: persons.length, txns };
+
+    let html = `
+      <div class="result-row"><span class="lbl">총 금액</span><span class="val">${fmt(total)}원</span></div>
+      <div class="result-row"><span class="lbl">인원</span><span class="val">${persons.length}명</span></div>
+      <div class="result-row"><span class="lbl">1인 평균</span><span class="val">${fmt(Math.round(avg))}원</span></div>
+    `;
+
+    if (txns.length > 0) {
+      html += `<div class="settle-title">정산 내역 (${txns.length}건)</div>`;
+      txns.forEach(t => {
+        html += `<div class="txn">
+          <span>${t.from}</span>
+          <span class="arrow">→</span>
+          <span>${t.to}</span>
+          <span class="amt">${fmt(t.amount)}원</span>
+        </div>`;
+      });
+    } else {
+      html += `<div style="text-align:center;padding:12px;color:var(--muted);font-size:0.88rem;">이미 정산 완료!</div>`;
+    }
+
+    showDutchResult(html);
+
+  } else if (mode === 'ratio') {
+    const total  = parseFloat(document.getElementById('r-total').value) || 0;
+    const ratios = getRatios().filter(r => r.pct > 0 || r.name);
+
+    setErr('e-rtotal', !total, 'r-total');
+    if (!total) return;
+
+    const sum = ratios.reduce((s, r) => s + r.pct, 0);
+    if (Math.abs(sum - 100) > 0.1) {
+      showToast(`비율 합계가 ${sum.toFixed(0)}%예요. 100%로 맞춰주세요.`);
+      return;
+    }
+
+    dutchResult = { mode: 'ratio', total, ratios };
+
+    let html = `<div class="result-row"><span class="lbl">총 금액</span><span class="val">${fmt(total)}원</span></div>
+                <div class="divider"></div>`;
+    ratios.forEach(r => {
+      const amt = Math.round(total * r.pct / 100);
+      html += `<div class="result-row">
+        <span class="lbl">${r.name || '?'} (${r.pct}%)</span>
+        <span class="val">${fmt(amt)}원</span>
+      </div>`;
+    });
+
+    showDutchResult(html);
+  }
+}
+
+// Optimal settlement: minimize transactions
+function settle(balances) {
+  const bs = balances.map(b => ({ ...b }));
+  const txns = [];
+
+  for (;;) {
+    bs.sort((a, b) => a.balance - b.balance);
+    const lo = bs[0], hi = bs[bs.length - 1];
+    if (Math.abs(lo.balance) < 0.5 && Math.abs(hi.balance) < 0.5) break;
+    if (Math.abs(lo.balance) < 0.5 || Math.abs(hi.balance) < 0.5) break;
+
+    const amt = Math.min(-lo.balance, hi.balance);
+    txns.push({ from: lo.name, to: hi.name, amount: Math.round(amt) });
+    lo.balance += amt;
+    hi.balance -= amt;
+  }
+  return txns;
+}
+
+// ─────────────────────────────────────────────
+// GPA
+// ─────────────────────────────────────────────
+function addSubject(name='', credit='', grade='') {
+  const list = document.getElementById('subject-list');
+  const row = document.createElement('div');
+  row.className = 'subj-row';
+  row.innerHTML = `
+    <input type="text" placeholder="과목명" value="${esc(name)}" oninput="saveState()" />
+    <input type="number" placeholder="3" min="1" max="6" value="${esc(credit)}" oninput="saveState()" />
+    <select onchange="saveState()">
+      <option value="">선택</option>
+      ${Object.keys(GRADE).map(g => `<option value="${g}" ${g===grade?'selected':''}>${g}</option>`).join('')}
+    </select>
+    <button class="del-btn" onclick="this.closest('.subj-row').remove(); saveState()">✕</button>
+  `;
+  list.appendChild(row);
+}
+
+function calcGPA() {
+  const rows = document.querySelectorAll('#subj-row, #subject-list .subj-row');
+  let totalC = 0, totalP = 0;
+  const subjects = [];
+  let skipped = 0;
+
+  document.querySelectorAll('#subject-list .subj-row').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const sel    = row.querySelector('select');
+    const name   = inputs[0].value.trim() || '?';
+    const credit = parseFloat(inputs[1].value);
+    const grade  = sel.value;
+    if (!credit || !grade) { skipped++; return; }
+    const pts = GRADE[grade];
+    totalC += credit; totalP += credit * pts;
+    subjects.push({ name, credit, grade, pts });
+  });
+
+  if (subjects.length === 0) {
+    showToast('과목 정보를 입력해주세요.');
+    return;
+  }
+
+  const gpa = totalP / totalC;
+  gpaResult = { gpa, totalC, subjects };
+
+  const badge = gpa >= 4.0 ? ['A등급','grade-A'] :
+                gpa >= 3.0 ? ['B등급','grade-B'] :
+                gpa >= 2.0 ? ['C등급','grade-C'] :
+                gpa >= 1.0 ? ['D등급','grade-D'] : ['F등급','grade-F'];
+
+  let html = `<div class="gpa-big">
+    <div class="gpa-num">${gpa.toFixed(2)}</div>
+    <div class="gpa-denom">/ 4.5</div>
+    <div><span class="gpa-badge ${badge[1]}">${badge[0]}</span></div>
+  </div>
+  <div class="divider"></div>
+  <div class="result-row"><span class="lbl">총 이수학점</span><span class="val">${totalC}학점</span></div>`;
+
+  subjects.forEach(s => {
+    html += `<div class="result-row">
+      <span class="lbl">${s.name}</span>
+      <span class="val">${s.credit}학점 · ${s.grade} (${s.pts})</span>
+    </div>`;
+  });
+
+  if (skipped > 0) html += `<div style="font-size:0.75rem;color:var(--muted);margin-top:8px;">${skipped}개 과목 누락됨</div>`;
+
+  document.getElementById('gpa-result-box').innerHTML = html;
+  document.getElementById('gpa-result').classList.add('show');
+}
+
+// ─────────────────────────────────────────────
+// Copy / Share
+// ─────────────────────────────────────────────
+function getResultText() {
+  if (!dutchResult) return '';
+  const d = dutchResult;
+  const includeMenu = document.getElementById('include-menu')?.checked && lastOCRItems.length > 0;
+
+  const menuBlock = includeMenu
+    ? '\n\n주문 내역\n' + lastOCRItems.map(it => `${it.name} ${fmt(it.price)}원`).join('\n')
+    : '';
+
+  if (d.mode === 'simple') {
+    let t = `더치페이 정산\n총 금액: ${fmt(d.total)}원\n인원: ${d.count}명`;
+    if (d.disc > 0) t += `\n할인: ${fmt(d.disc)}원`;
+    t += `\n\n1인당: ${fmt(d.perCeil)}원`;
+    return t + menuBlock;
+  }
+  if (d.mode === 'custom') {
+    let t = `더치페이 정산\n총 금액: ${fmt(d.total)}원\n인원: ${d.count}명\n\n`;
+    if (d.txns.length === 0) { return t + '이미 정산 완료!' + menuBlock; }
+    t += '송금 내역\n';
+    d.txns.forEach(tx => { t += `${tx.from} → ${tx.to}: ${fmt(tx.amount)}원\n`; });
+    return t.trim() + menuBlock;
+  }
+  if (d.mode === 'ratio') {
+    let t = `비율 정산\n총 금액: ${fmt(d.total)}원\n\n`;
+    d.ratios.forEach(r => {
+      t += `${r.name || '?'} (${r.pct}%): ${fmt(Math.round(d.total * r.pct / 100))}원\n`;
+    });
+    return t.trim() + menuBlock;
+  }
+  return '';
+}
+
+function copyResult() {
+  const text = getResultText();
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '복사됨 ✓'; btn.classList.add('done');
+    setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('done'); }, 2000);
+  }).catch(() => showToast('복사 실패'));
+}
+
+function copyGPA() {
+  if (!gpaResult) return;
+  const d = gpaResult;
+  let t = `학점 계산 결과\nGPA: ${d.gpa.toFixed(2)} / 4.5\n총 ${d.totalC}학점\n\n`;
+  d.subjects.forEach(s => { t += `${s.name}: ${s.credit}학점 ${s.grade}\n`; });
+  navigator.clipboard.writeText(t.trim()).then(() => {
+    const btn = document.getElementById('gpa-copy-btn');
+    btn.textContent = '복사됨 ✓'; btn.classList.add('done');
+    setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('done'); }, 2000);
+  }).catch(() => showToast('복사 실패'));
+}
+
+function shareResult() {
+  const text = getResultText();
+  const url  = buildShareURL();
+
+  if (navigator.share) {
+    navigator.share({ title: '더치페이 정산', text, url }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('share-btn');
+      btn.textContent = '링크 복사됨 ✓'; btn.classList.add('done');
+      setTimeout(() => { btn.textContent = '공유 링크'; btn.classList.remove('done'); }, 2500);
+    }).catch(() => showToast('공유 실패'));
+  }
+}
+
+function buildShareURL() {
+  const state = gatherState();
+  const enc = btoa(encodeURIComponent(JSON.stringify(state)));
+  return `${location.origin}${location.pathname}#s=${enc}`;
+}
+
+// ─────────────────────────────────────────────
+// OCR — Google Cloud Vision API
+// ─────────────────────────────────────────────
+let lastOCRItems = [];   // { name, price }[]
+
+function openSettings() {
+  document.getElementById('api-key-input').value = localStorage.getItem('gcv_api_key') || '';
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (key) localStorage.setItem('gcv_api_key', key);
+  else localStorage.removeItem('gcv_api_key');
+  closeSettings();
+  showToast(key ? 'API 키가 저장되었습니다' : 'API 키가 삭제되었습니다');
+}
+
+function handleDrop(ev, target) {
+  ev.preventDefault();
+  document.getElementById('ocr-zone-' + target).classList.remove('drag-over');
+  const file = ev.dataTransfer.files[0];
+  if (file) runOCR(file, target);
+}
+
+function handleOCRFile(input, target) {
+  if (input.files[0]) runOCR(input.files[0], target);
+}
+
+async function runOCR(file, target) {
+  const apiKey = localStorage.getItem('gcv_api_key');
+  if (!apiKey) {
+    openSettings();
+    showToast('먼저 API 키를 입력해주세요');
+    return;
+  }
+
+  const statusEl = document.getElementById('ocr-status-' + target);
+  statusEl.style.display = 'block';
+  statusEl.textContent = '이미지 분석 중...';
+
+  try {
+    // 이미지 → base64
+    const base64 = await fileToBase64(file);
+
+    const res = await fetch(
+      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requests: [{
+            image: { content: base64 },
+            features: [{ type: 'TEXT_DETECTION', maxResults: 1 }]
+          }]
+        })
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json();
+      const msg = err?.error?.message || res.status;
+      throw new Error(msg);
+    }
+
+    const json = await res.json();
+    const text = json.responses?.[0]?.textAnnotations?.[0]?.description || '';
+
+    if (!text) {
+      showToast('텍스트를 인식하지 못했어요. 직접 입력해주세요.');
+      lastOCRItems = [];
+      statusEl.style.display = 'none';
+      return;
+    }
+
+    const amount = extractAmount(text);
+    if (amount) {
+      if (target === 'simple') document.getElementById('s-total').value = amount;
+      if (target === 'ratio')  document.getElementById('r-total').value = amount;
+      showToast(`금액 인식: ${fmt(amount)}원`);
+      saveState();
+    } else {
+      showToast('금액을 찾지 못했어요. 직접 입력해주세요.');
+    }
+
+    lastOCRItems = extractMenuItems(text);
+
+  } catch (e) {
+    showToast(`OCR 실패: ${e.message}`);
+    lastOCRItems = [];
+  }
+
+  statusEl.style.display = 'none';
+}
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result.split(',')[1]);
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+}
+
+function extractAmount(text) {
+  const patterns = [
+    /(?:합계|총액|total|결제금액|총금액|실결제|최종결제|합 계)[^\d]*([0-9,]+)/gi,
+    /([0-9,]+)\s*원?\s*(?:합계|total)/gi,
+  ];
+  let found = [];
+  for (const p of patterns) {
+    let m;
+    while ((m = p.exec(text)) !== null) {
+      const n = parseInt(m[1].replace(/,/g, ''));
+      if (n >= 1000) found.push(n);
+    }
+  }
+  if (found.length) return Math.max(...found);
+
+  const nums = (text.match(/[0-9,]{4,}/g) || [])
+    .map(n => parseInt(n.replace(/,/g, '')))
+    .filter(n => n >= 1000 && n <= 9999999);
+  if (nums.length) return Math.max(...nums);
+  return null;
+}
+
+// 가격이 포함된 줄 필터링 방식으로 메뉴 추출
+function extractMenuItems(text) {
+  const skipPattern = /합계|총액|total|결제금액|총금액|실결제|최종|소계|부가세|vat|할인|tax|subtotal|service|봉사료|잔돈|거스름/i;
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const items = [];
+
+  for (const line of lines) {
+    if (skipPattern.test(line)) continue;
+
+    // 줄 끝 또는 중간에 숫자(가격)가 있어야 함
+    const m = line.match(/^(.+?)\s{1,}([0-9,]{3,})\s*원?\s*$/);
+    if (!m) continue;
+
+    const name  = m[1].trim();
+    const price = parseInt(m[2].replace(/,/g, ''));
+
+    if (!name || name.length < 1 || name.length > 30) continue;
+    if (price < 100 || price > 5000000) continue;
+    // 이름 부분이 숫자만이면 수량 등으로 판단해 제외
+    if (/^\d+$/.test(name)) continue;
+
+    items.push({ name, price });
+  }
+
+  return items;
+}
+
+// 결과 화면에 주문 내역 토글 표시
+function renderMenuToggle() {
+  const btn  = document.getElementById('menu-toggle-btn');
+  const list = document.getElementById('menu-items');
+
+  if (!lastOCRItems.length) {
+    btn.style.display = 'none';
+    return;
+  }
+
+  btn.style.display = 'flex';
+  list.innerHTML = lastOCRItems.map(it =>
+    `<div class="menu-item">
+       <span class="m-name">${esc(it.name)}</span>
+       <span class="m-price">${fmt(it.price)}원</span>
+     </div>`
+  ).join('');
+}
+
+function toggleMenuDetail() {
+  const btn  = document.getElementById('menu-toggle-btn');
+  const list = document.getElementById('menu-list');
+  const open = list.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  btn.querySelector('span').textContent = open ? '주문 내역 닫기' : '주문 내역 보기';
+}
+
+// ─────────────────────────────────────────────
+// localStorage
+// ─────────────────────────────────────────────
+function gatherState() {
+  return {
+    mode,
+    simple: {
+      total:   document.getElementById('s-total').value,
+      count:   document.getElementById('s-count').value,
+      disc:    document.getElementById('s-disc').value,
+    },
+    custom: getPersons(),
+    ratio: {
+      total: document.getElementById('r-total').value,
+      rows:  getRatios()
+    },
+    gpa: [...document.querySelectorAll('#subject-list .subj-row')].map(r => {
+      const i = r.querySelectorAll('input');
+      return { name: i[0].value, credit: i[1].value, grade: r.querySelector('select').value };
+    })
+  };
+}
+
+function saveState() {
+  try { localStorage.setItem('calc_state', JSON.stringify(gatherState())); } catch {}
+}
+
+function restoreState(st) {
+  if (!st) return;
+  setMode(st.mode || 'simple');
+
+  if (st.simple) {
+    document.getElementById('s-total').value = st.simple.total || '';
+    document.getElementById('s-count').value = st.simple.count || '';
+    document.getElementById('s-disc').value  = st.simple.disc  || '';
+  }
+  if (st.custom && st.custom.length) {
+    document.getElementById('person-list').innerHTML = '';
+    st.custom.forEach(p => addPerson(p.name, p.amount));
+  }
+  if (st.ratio) {
+    document.getElementById('r-total').value = st.ratio.total || '';
+    if (st.ratio.rows && st.ratio.rows.length) {
+      document.getElementById('ratio-list').innerHTML = '';
+      st.ratio.rows.forEach(r => addRatio(r.name, r.pct));
+      updateRatioSum();
+    }
+  }
+  if (st.gpa && st.gpa.length) {
+    document.getElementById('subject-list').innerHTML = '';
+    st.gpa.forEach(s => addSubject(s.name, s.credit, s.grade));
+  }
+}
+
+// ─────────────────────────────────────────────
+// URL share restore
+// ─────────────────────────────────────────────
+function tryRestoreFromURL() {
+  const hash = location.hash;
+  if (!hash.startsWith('#s=')) return false;
+  try {
+    const st = JSON.parse(decodeURIComponent(atob(hash.slice(3))));
+    restoreState(st);
+    return true;
+  } catch { return false; }
+}
+
+// ─────────────────────────────────────────────
+// UI helpers
+// ─────────────────────────────────────────────
+function showDutchResult(html) {
+  document.getElementById('dutch-result-box').innerHTML = html;
+  // 메뉴 토글 초기화
+  document.getElementById('menu-list').classList.remove('open');
+  document.getElementById('menu-toggle-btn').classList.remove('open');
+  document.getElementById('menu-toggle-btn').querySelector('span').textContent = '주문 내역 보기';
+  renderMenuToggle();
+  document.getElementById('dutch-result').classList.add('show');
+}
+
+function hideResult() {
+  document.getElementById('dutch-result').classList.remove('show');
+  dutchResult = null;
+}
+
+function setErr(id, show, inputId) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('show', show);
+  if (inputId) document.getElementById(inputId)?.classList.toggle('err', show);
+}
+
+function fmt(n) { return Math.round(n).toLocaleString('ko-KR'); }
+function esc(v) { return String(v ?? '').replace(/"/g, '&quot;'); }
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ─────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────
+(function init() {
+  // Theme
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.getElementById('theme-btn').textContent = '라이트';
+  }
+
+  // Restore from URL or localStorage
+  if (!tryRestoreFromURL()) {
+    try {
+      const st = JSON.parse(localStorage.getItem('calc_state'));
+      restoreState(st);
+    } catch {}
+  }
+
+  // Ensure defaults
+  if (document.getElementById('person-list').children.length === 0 && mode === 'custom') {
+    addPerson(); addPerson(); addPerson();
+  }
+  if (document.getElementById('ratio-list').children.length === 0 && mode === 'ratio') {
+    addRatio(); addRatio(); addRatio();
+  }
+  if (document.getElementById('subject-list').children.length === 0) {
+    addSubject(); addSubject(); addSubject();
+  }
+})();
+</script>
+</body>
+</html>
