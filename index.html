@@ -205,7 +205,9 @@
       border-color: var(--primary);
       background: var(--primary-light);
     }
-    .ocr-zone p { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    .ocr-zone:hover svg, .ocr-zone.drag-over svg { stroke: var(--primary); }
+    .ocr-zone svg { stroke: var(--muted); transition: stroke .2s; }
+    .ocr-zone p { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
 
     .ocr-status {
       font-size: 0.78rem; color: var(--primary);
@@ -515,6 +517,7 @@
            ondragover="ev.preventDefault();this.classList.add('drag-over')"
            ondragleave="this.classList.remove('drag-over')"
            ondrop="handleDrop(event,'simple')">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/></svg>
         <p>영수증 사진 업로드 → 금액 자동 인식</p>
       </div>
       <input type="file" id="ocr-input" accept="image/*" style="display:none" onchange="handleOCRFile(this,'simple')">
@@ -545,6 +548,7 @@
            ondragover="ev.preventDefault();this.classList.add('drag-over')"
            ondragleave="this.classList.remove('drag-over')"
            ondrop="handleDrop(event,'custom')">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/></svg>
         <p>영수증 사진 업로드 → 금액 자동 인식</p>
       </div>
       <input type="file" id="ocr-input2" accept="image/*" style="display:none" onchange="handleOCRFile(this,'custom')">
@@ -562,6 +566,7 @@
            ondragover="ev.preventDefault();this.classList.add('drag-over')"
            ondragleave="this.classList.remove('drag-over')"
            ondrop="handleDrop(event,'ratio')">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/></svg>
         <p>영수증 사진 업로드 → 금액 자동 인식</p>
       </div>
       <input type="file" id="ocr-input3" accept="image/*" style="display:none" onchange="handleOCRFile(this,'ratio')">
