@@ -464,28 +464,7 @@
 
 <div class="header">
   <h1>정산 계산기</h1>
-  <div style="display:flex;gap:7px;">
-    <button class="icon-btn" onclick="openSettings()">OCR 설정</button>
-    <button class="icon-btn" id="theme-btn" onclick="toggleTheme()">다크</button>
-  </div>
-</div>
-
-<!-- Settings modal -->
-<div class="modal-overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
-  <div class="modal">
-    <h3>Google Cloud Vision API 키</h3>
-    <p>영수증 자동 인식에 사용됩니다. 키는 이 기기에만 저장되며 외부로 전송되지 않습니다.</p>
-    <label>API 키</label>
-    <input type="text" id="api-key-input" placeholder="AIza..." autocomplete="off" />
-    <div class="api-key-hint">
-      키 발급: <a href="https://console.cloud.google.com/apis/library/vision.googleapis.com" target="_blank">Google Cloud Console</a> → Vision API 사용 설정 → 사용자 인증 정보 → API 키 생성<br>
-      월 1,000회 무료 (개인 사용에 충분)
-    </div>
-    <div class="modal-actions">
-      <button onclick="closeSettings()">취소</button>
-      <button class="btn-confirm" onclick="saveApiKey()">저장</button>
-    </div>
-  </div>
+  <button class="icon-btn" id="theme-btn" onclick="toggleTheme()">다크</button>
 </div>
 
 <div class="tabs">
@@ -990,22 +969,8 @@ function buildShareURL() {
 // ─────────────────────────────────────────────
 // OCR — Google Cloud Vision API
 // ─────────────────────────────────────────────
+const GCV_KEY = 'AIzaSyBxwg-c6ykeIk8Mo5n0wnEao1ChWWG1wUE';
 let lastOCRItems = [];   // { name, price }[]
-
-function openSettings() {
-  document.getElementById('api-key-input').value = localStorage.getItem('gcv_api_key') || '';
-  document.getElementById('settings-modal').classList.add('open');
-}
-function closeSettings() {
-  document.getElementById('settings-modal').classList.remove('open');
-}
-function saveApiKey() {
-  const key = document.getElementById('api-key-input').value.trim();
-  if (key) localStorage.setItem('gcv_api_key', key);
-  else localStorage.removeItem('gcv_api_key');
-  closeSettings();
-  showToast(key ? 'API 키가 저장되었습니다' : 'API 키가 삭제되었습니다');
-}
 
 function handleDrop(ev, target) {
   ev.preventDefault();
@@ -1019,12 +984,7 @@ function handleOCRFile(input, target) {
 }
 
 async function runOCR(file, target) {
-  const apiKey = localStorage.getItem('gcv_api_key');
-  if (!apiKey) {
-    openSettings();
-    showToast('먼저 API 키를 입력해주세요');
-    return;
-  }
+  const apiKey = GCV_KEY;
 
   const statusEl = document.getElementById('ocr-status-' + target);
   statusEl.style.display = 'block';
