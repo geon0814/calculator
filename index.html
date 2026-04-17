@@ -514,7 +514,7 @@
     <div id="pane-simple">
       <div class="ocr-zone" id="ocr-zone-simple"
            onclick="document.getElementById('ocr-input').click()"
-           ondragover="ev.preventDefault();this.classList.add('drag-over')"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
            ondragleave="this.classList.remove('drag-over')"
            ondrop="handleDrop(event,'simple')">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/></svg>
@@ -545,7 +545,7 @@
     <div id="pane-custom" style="display:none">
       <div class="ocr-zone" id="ocr-zone-custom"
            onclick="document.getElementById('ocr-input2').click()"
-           ondragover="ev.preventDefault();this.classList.add('drag-over')"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
            ondragleave="this.classList.remove('drag-over')"
            ondrop="handleDrop(event,'custom')">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/></svg>
@@ -563,7 +563,7 @@
     <div id="pane-ratio" style="display:none">
       <div class="ocr-zone" id="ocr-zone-ratio"
            onclick="document.getElementById('ocr-input3').click()"
-           ondragover="ev.preventDefault();this.classList.add('drag-over')"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
            ondragleave="this.classList.remove('drag-over')"
            ondrop="handleDrop(event,'ratio')">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/></svg>
@@ -1014,15 +1014,29 @@ function buildShareURL() {
 const GCV_KEY = 'AIzaSyBxwg-c6ykeIk8Mo5n0wnEao1ChWWG1wUE';
 let lastOCRItems = [];   // { name, price }[]
 
+const MAX_OCR_BYTES = 4 * 1024 * 1024; // 4MB
+
+function validateImage(file) {
+  if (!file) return '파일이 없습니다.';
+  if (!file.type.startsWith('image/')) return '이미지 파일만 업로드할 수 있어요.';
+  if (file.size > MAX_OCR_BYTES) return `파일이 너무 커요 (최대 ${MAX_OCR_BYTES / 1024 / 1024}MB).`;
+  return null;
+}
+
 function handleDrop(ev, target) {
   ev.preventDefault();
   document.getElementById('ocr-zone-' + target).classList.remove('drag-over');
   const file = ev.dataTransfer.files[0];
-  if (file) runOCR(file, target);
+  const err = validateImage(file);
+  if (err) { showToast(err); return; }
+  runOCR(file, target);
 }
 
 function handleOCRFile(input, target) {
-  if (input.files[0]) runOCR(input.files[0], target);
+  const file = input.files[0];
+  const err = validateImage(file);
+  if (err) { showToast(err); input.value = ''; return; }
+  runOCR(file, target);
 }
 
 async function runOCR(file, target) {
@@ -1272,7 +1286,14 @@ function setErr(id, show, inputId) {
 }
 
 function fmt(n) { return Math.round(n).toLocaleString('ko-KR'); }
-function esc(v) { return String(v ?? '').replace(/"/g, '&quot;'); }
+function esc(v) {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 let toastTimer;
 function showToast(msg) {
