@@ -1059,7 +1059,8 @@ async function runOCR(file, target) {
         body: JSON.stringify({
           requests: [{
             image: { content: base64 },
-            features: [{ type: 'TEXT_DETECTION', maxResults: 1 }]
+            features: [{ type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 }],
+            imageContext: { languageHints: ['ko'] }
           }]
         })
       }
