@@ -521,13 +521,18 @@
       margin-top: 12px;
       padding: 10px 12px;
       background: var(--card);
-      border: 1px dashed var(--primary);
+      border: 1px solid var(--border);
       border-radius: 9px;
       font-size: 0.85rem;
       display: flex;
-      gap: 8px;
+      gap: 10px;
       align-items: center;
       word-break: break-all;
+    }
+    .account-badge .account-label {
+      font-size: 0.7rem; font-weight: 700;
+      color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
+      flex-shrink: 0;
     }
     .account-badge .copy-mini {
       margin-left: auto;
@@ -706,7 +711,7 @@
 
     <!-- 목표 GPA 역산 -->
     <div class="target-block">
-      <div class="target-title">🎯 목표 GPA 역산</div>
+      <div class="target-title">목표 GPA 역산</div>
       <div class="two-col">
         <div class="field">
           <label>목표 GPA</label>
@@ -1055,10 +1060,10 @@ function calcTargetGPA() {
 
   if (required <= 0) {
     box.className = 'target-result show good';
-    box.innerHTML = `🎉 이미 목표 달성! 다음 학기 어떤 성적이든 GPA <strong>${target.toFixed(2)}</strong> 이상 유지됩니다.`;
+    box.innerHTML = `이미 목표 달성입니다. 다음 학기 어떤 성적이든 GPA <strong>${target.toFixed(2)}</strong> 이상 유지됩니다.`;
   } else if (required > 4.5) {
     box.className = 'target-result show hard';
-    box.innerHTML = `😢 <strong>${addC}학점</strong>만으로는 달성 불가해요. 필요 평균 <strong>${required.toFixed(2)}</strong> > 4.5 (만점)`;
+    box.innerHTML = `<strong>${addC}학점</strong>만으로는 달성이 불가합니다. 필요 평균 <strong>${required.toFixed(2)}</strong> > 4.5 (만점)`;
   } else {
     box.className = 'target-result show';
     box.innerHTML = `다음 학기 <strong>${addC}학점</strong>에서 평균 <span class="target-req">${required.toFixed(2)}</span> 이상 받으면 GPA <strong>${target.toFixed(2)}</strong> 달성!`;
@@ -1077,7 +1082,7 @@ function getResultText() {
   const menuBlock = includeMenu
     ? '\n\n주문 내역\n' + lastOCRItems.map(it => `${it.name} ${fmt(it.price)}원`).join('\n')
     : '';
-  const accountBlock = account ? `\n\n💳 ${account}` : '';
+  const accountBlock = account ? `\n\n정산 계좌: ${account}` : '';
 
   if (d.mode === 'simple') {
     let t = `더치페이 정산\n총 금액: ${fmt(d.total)}원\n인원: ${d.count}명`;
@@ -1451,7 +1456,8 @@ function showDutchResult(html) {
   const account = document.getElementById('account-info')?.value.trim();
   const accountHtml = account
     ? `<div class="account-badge">
-         <span>💳 ${esc(account)}</span>
+         <span class="account-label">정산 계좌</span>
+         <span>${esc(account)}</span>
          <button class="copy-mini" onclick="copyAccount()">복사</button>
        </div>`
     : '';
