@@ -450,19 +450,26 @@
 
     /* ── Loading spinner ── */
     .ocr-status {
-      font-size: 0.78rem; color: var(--primary);
-      text-align: center; padding: 10px 0; display: none;
-      display: none; align-items: center; justify-content: center; gap: 8px;
+      font-size: 0.85rem; color: var(--primary);
+      padding: 14px; display: none;
+      align-items: center; justify-content: center; gap: 10px;
+      background: var(--primary-light);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 14px;
+      font-weight: 600;
     }
     .ocr-spinner {
-      width: 14px; height: 14px;
-      border: 2px solid var(--border);
+      width: 16px; height: 16px;
+      border: 2.5px solid var(--border);
       border-top-color: var(--primary);
       border-radius: 50%;
       animation: spin .7s linear infinite;
       flex-shrink: 0;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity: .5 } }
+    .ocr-status span { animation: pulse 1.4s ease-in-out infinite; }
 
     /* ── Toast ── */
     .toast {
@@ -480,6 +487,61 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
+    /* ── Target GPA ── */
+    .target-block {
+      margin-top: 18px;
+      padding: 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .target-title {
+      font-size: 0.85rem; font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    .target-result {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 9px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-size: 0.88rem;
+      line-height: 1.5;
+      display: none;
+    }
+    .target-result.show { display: block; animation: fadeUp .2s ease; }
+    .target-result.good { border-color: #22C55E; background: #F0FDF4; }
+    .target-result.hard { border-color: var(--red); background: var(--red-bg); }
+    [data-theme="dark"] .target-result.good { background: #0F2E1C; }
+    .target-req { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
+
+    /* ── Account info on result ── */
+    .account-badge {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: var(--card);
+      border: 1px dashed var(--primary);
+      border-radius: 9px;
+      font-size: 0.85rem;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      word-break: break-all;
+    }
+    .account-badge .copy-mini {
+      margin-left: auto;
+      padding: 3px 9px;
+      font-size: 0.72rem; font-weight: 700;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .account-badge .copy-mini:hover { color: var(--primary); border-color: var(--primary); }
+
     @media (max-width: 400px) {
       .two-col { grid-template-columns: 1fr; }
       .person-row { grid-template-columns: 1fr 1fr 34px; }
@@ -488,6 +550,8 @@
   </style>
 </head>
 <body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 
 <div class="toast" id="toast"></div>
 
@@ -582,6 +646,12 @@
       <div class="ratio-sum" id="ratio-sum">합계: 0%</div>
     </div>
 
+    <!-- 정산 계좌 -->
+    <div class="field" style="margin-top:14px;">
+      <label>정산 계좌 (선택)</label>
+      <input type="text" id="account-info" placeholder="예: 카카오뱅크 3333-01-1234567 홍길동" oninput="saveState()" />
+    </div>
+
     <!-- OCR 결과 블록 (참고용) -->
     <div class="ocr-result-block" id="ocr-result-block">
       <div class="ocr-result-header">
@@ -609,6 +679,7 @@
       </div>
       <div class="result-actions">
         <button id="copy-btn" onclick="copyResult()">복사</button>
+        <button id="image-btn" onclick="saveAsImage()">이미지</button>
         <button id="share-btn" onclick="shareResult()">공유 링크</button>
       </div>
     </div>
@@ -629,7 +700,24 @@
       <div class="result-box" id="gpa-result-box"></div>
       <div class="result-actions">
         <button id="gpa-copy-btn" onclick="copyGPA()">복사</button>
+        <button id="gpa-image-btn" onclick="saveGPAImage()">이미지</button>
       </div>
+    </div>
+
+    <!-- 목표 GPA 역산 -->
+    <div class="target-block">
+      <div class="target-title">🎯 목표 GPA 역산</div>
+      <div class="two-col">
+        <div class="field">
+          <label>목표 GPA</label>
+          <input type="number" id="target-gpa" placeholder="4.0" step="0.01" min="0" max="4.5" oninput="calcTargetGPA()" />
+        </div>
+        <div class="field">
+          <label>예정 이수학점</label>
+          <input type="number" id="target-credit" placeholder="18" min="1" oninput="calcTargetGPA()" />
+        </div>
+      </div>
+      <div id="target-result" class="target-result"></div>
     </div>
   </div>
 </div>
@@ -655,9 +743,13 @@ const GRADE = {
 // ─────────────────────────────────────────────
 function toggleTheme() {
   const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
-  document.getElementById('theme-btn').textContent = dark ? '다크' : '라이트';
+  applyTheme(dark ? 'light' : 'dark');
   localStorage.setItem('theme', dark ? 'light' : 'dark');
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('theme-btn').textContent = theme === 'dark' ? '라이트' : '다크';
 }
 
 // ─────────────────────────────────────────────
@@ -768,7 +860,7 @@ function calcDutch() {
       ${disc > 0 ? `<div class="result-row"><span class="lbl">할인 후</span><span class="val">${fmt(net)}원</span></div>` : ''}
       <div class="result-row"><span class="lbl">인원</span><span class="val">${count}명</span></div>
       <div class="divider"></div>
-      <div class="result-row"><span class="lbl">1인 (올림)</span><span class="val" style="color:var(--primary);font-size:1.1rem">${fmt(perCeil)}원</span></div>
+      <div class="result-row"><span class="lbl">1인 (올림)</span><span class="val" style="color:var(--primary);font-size:1.1rem" data-count="${perCeil}" data-suffix="원">0원</span></div>
       <div class="result-row"><span class="lbl">1인 (내림)</span><span class="val">${fmt(perFloor)}원</span></div>
     `;
     showDutchResult(html);
@@ -910,7 +1002,7 @@ function calcGPA() {
                 gpa >= 1.0 ? ['D등급','grade-D'] : ['F등급','grade-F'];
 
   let html = `<div class="gpa-big">
-    <div class="gpa-num">${gpa.toFixed(2)}</div>
+    <div class="gpa-num" data-count="${gpa.toFixed(2)}" data-decimals="2">0.00</div>
     <div class="gpa-denom">/ 4.5</div>
     <div><span class="gpa-badge ${badge[1]}">${badge[0]}</span></div>
   </div>
@@ -928,6 +1020,37 @@ function calcGPA() {
 
   document.getElementById('gpa-result-box').innerHTML = html;
   document.getElementById('gpa-result').classList.add('show');
+  animateAllCounts(document.getElementById('gpa-result-box'));
+  calcTargetGPA();
+}
+
+function calcTargetGPA() {
+  const box = document.getElementById('target-result');
+  if (!gpaResult) { box.classList.remove('show'); return; }
+
+  const target = parseFloat(document.getElementById('target-gpa').value);
+  const addC   = parseFloat(document.getElementById('target-credit').value);
+  if (!target || !addC || target < 0 || addC < 1) { box.classList.remove('show'); return; }
+  if (target > 4.5) {
+    box.className = 'target-result show hard';
+    box.innerHTML = '목표가 4.5를 넘어요. 다시 입력해주세요.';
+    return;
+  }
+
+  const { totalC, gpa } = gpaResult;
+  const curP = gpa * totalC;
+  const required = (target * (totalC + addC) - curP) / addC;
+
+  if (required <= 0) {
+    box.className = 'target-result show good';
+    box.innerHTML = `🎉 이미 목표 달성! 다음 학기 어떤 성적이든 GPA <strong>${target.toFixed(2)}</strong> 이상 유지됩니다.`;
+  } else if (required > 4.5) {
+    box.className = 'target-result show hard';
+    box.innerHTML = `😢 <strong>${addC}학점</strong>만으로는 달성 불가해요. 필요 평균 <strong>${required.toFixed(2)}</strong> > 4.5 (만점)`;
+  } else {
+    box.className = 'target-result show';
+    box.innerHTML = `다음 학기 <strong>${addC}학점</strong>에서 평균 <span class="target-req">${required.toFixed(2)}</span> 이상 받으면 GPA <strong>${target.toFixed(2)}</strong> 달성!`;
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -937,30 +1060,32 @@ function getResultText() {
   if (!dutchResult) return '';
   const d = dutchResult;
   const includeMenu = document.getElementById('include-menu')?.checked && lastOCRItems.length > 0;
+  const account = document.getElementById('account-info')?.value.trim();
 
   const menuBlock = includeMenu
     ? '\n\n주문 내역\n' + lastOCRItems.map(it => `${it.name} ${fmt(it.price)}원`).join('\n')
     : '';
+  const accountBlock = account ? `\n\n💳 ${account}` : '';
 
   if (d.mode === 'simple') {
     let t = `더치페이 정산\n총 금액: ${fmt(d.total)}원\n인원: ${d.count}명`;
     if (d.disc > 0) t += `\n할인: ${fmt(d.disc)}원`;
     t += `\n\n1인당: ${fmt(d.perCeil)}원`;
-    return t + menuBlock;
+    return t + menuBlock + accountBlock;
   }
   if (d.mode === 'custom') {
     let t = `더치페이 정산\n총 금액: ${fmt(d.total)}원\n인원: ${d.count}명\n\n`;
-    if (d.txns.length === 0) { return t + '이미 정산 완료!' + menuBlock; }
+    if (d.txns.length === 0) { return t + '이미 정산 완료!' + menuBlock + accountBlock; }
     t += '송금 내역\n';
     d.txns.forEach(tx => { t += `${tx.from} → ${tx.to}: ${fmt(tx.amount)}원\n`; });
-    return t.trim() + menuBlock;
+    return t.trim() + menuBlock + accountBlock;
   }
   if (d.mode === 'ratio') {
     let t = `비율 정산\n총 금액: ${fmt(d.total)}원\n\n`;
     d.ratios.forEach(r => {
       t += `${r.name || '?'} (${r.pct}%): ${fmt(Math.round(d.total * r.pct / 100))}원\n`;
     });
-    return t.trim() + menuBlock;
+    return t.trim() + menuBlock + accountBlock;
   }
   return '';
 }
@@ -985,6 +1110,47 @@ function copyGPA() {
     btn.textContent = '복사됨 ✓'; btn.classList.add('done');
     setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('done'); }, 2000);
   }).catch(() => showToast('복사 실패'));
+}
+
+async function saveAsImage() {
+  const target = document.getElementById('dutch-result-box');
+  if (!target || !dutchResult) return;
+  await captureAndShare(target, 'settlement.png', '정산 결과');
+}
+
+async function saveGPAImage() {
+  const target = document.getElementById('gpa-result-box');
+  if (!target || !gpaResult) return;
+  await captureAndShare(target, 'gpa.png', '학점 계산 결과');
+}
+
+async function captureAndShare(node, filename, title) {
+  if (typeof html2canvas === 'undefined') {
+    showToast('라이브러리 로딩 중... 잠시 후 다시');
+    return;
+  }
+  try {
+    const bg = getComputedStyle(document.body).backgroundColor;
+    const canvas = await html2canvas(node, { backgroundColor: bg, scale: 2, useCORS: true });
+    canvas.toBlob(async (blob) => {
+      if (!blob) { showToast('이미지 생성 실패'); return; }
+      const file = new File([blob], filename, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title });
+          return;
+        } catch (_) { /* fallthrough to download */ }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      showToast('이미지 저장됨');
+    }, 'image/png');
+  } catch (e) {
+    showToast('이미지 생성 실패');
+  }
 }
 
 function shareResult() {
@@ -1201,6 +1367,7 @@ function toggleMenuDetail() {
 function gatherState() {
   return {
     mode,
+    account: document.getElementById('account-info')?.value || '',
     simple: {
       total:   document.getElementById('s-total').value,
       count:   document.getElementById('s-count').value,
@@ -1225,6 +1392,9 @@ function saveState() {
 function restoreState(st) {
   if (!st) return;
   setMode(st.mode || 'simple');
+
+  const acc = document.getElementById('account-info');
+  if (acc) acc.value = st.account || '';
 
   if (st.simple) {
     document.getElementById('s-total').value = st.simple.total || '';
@@ -1266,13 +1436,45 @@ function tryRestoreFromURL() {
 // UI helpers
 // ─────────────────────────────────────────────
 function showDutchResult(html) {
-  document.getElementById('dutch-result-box').innerHTML = html;
+  const account = document.getElementById('account-info')?.value.trim();
+  const accountHtml = account
+    ? `<div class="account-badge">
+         <span>💳 ${esc(account)}</span>
+         <button class="copy-mini" onclick="copyAccount()">복사</button>
+       </div>`
+    : '';
+  document.getElementById('dutch-result-box').innerHTML = html + accountHtml;
   // 메뉴 토글 초기화
   document.getElementById('menu-list').classList.remove('open');
   document.getElementById('menu-toggle-btn').classList.remove('open');
   document.getElementById('menu-toggle-btn').querySelector('span').textContent = '주문 내역 보기';
   renderMenuToggle();
   document.getElementById('dutch-result').classList.add('show');
+  animateAllCounts(document.getElementById('dutch-result-box'));
+}
+
+function copyAccount() {
+  const account = document.getElementById('account-info')?.value.trim();
+  if (!account) return;
+  navigator.clipboard.writeText(account).then(() => showToast('계좌 복사됨'));
+}
+
+function animateAllCounts(root) {
+  root.querySelectorAll('[data-count]').forEach(el => {
+    const target = parseFloat(el.dataset.count);
+    const suffix = el.dataset.suffix || '';
+    const decimals = parseInt(el.dataset.decimals || '0');
+    const duration = 600;
+    const start = performance.now();
+    function tick(now) {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const cur = target * eased;
+      el.textContent = (decimals > 0 ? cur.toFixed(decimals) : fmt(cur)) + suffix;
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
 }
 
 function hideResult() {
@@ -1309,12 +1511,24 @@ function showToast(msg) {
 // Init
 // ─────────────────────────────────────────────
 (function init() {
-  // Theme
+  // Theme: respect saved preference, otherwise follow system
   const saved = localStorage.getItem('theme');
-  if (saved === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    document.getElementById('theme-btn').textContent = '라이트';
+  if (saved === 'dark' || saved === 'light') {
+    applyTheme(saved);
+  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    applyTheme('dark');
   }
+  // Live-follow system if user hasn't set explicit preference
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      if (!localStorage.getItem('theme')) applyTheme(e.matches ? 'dark' : 'light');
+    });
+  }
+
+  // Haptic feedback on button taps (mobile)
+  document.addEventListener('click', e => {
+    if (e.target.closest('button') && navigator.vibrate) navigator.vibrate(8);
+  });
 
   // Restore from URL or localStorage
   if (!tryRestoreFromURL()) {
