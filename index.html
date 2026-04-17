@@ -741,15 +741,27 @@ const GRADE = {
 // ─────────────────────────────────────────────
 // Theme
 // ─────────────────────────────────────────────
+// Theme cycle: auto → light → dark → auto
 function toggleTheme() {
-  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-  applyTheme(dark ? 'light' : 'dark');
-  localStorage.setItem('theme', dark ? 'light' : 'dark');
+  const cur = localStorage.getItem('theme') || 'auto';
+  const next = cur === 'auto' ? 'light' : cur === 'light' ? 'dark' : 'auto';
+  if (next === 'auto') localStorage.removeItem('theme');
+  else localStorage.setItem('theme', next);
+  syncTheme();
+}
+
+function syncTheme() {
+  const saved = localStorage.getItem('theme');
+  const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const effective = saved || (systemDark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', effective);
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = !saved ? '자동' : saved === 'dark' ? '다크' : '라이트';
 }
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  document.getElementById('theme-btn').textContent = theme === 'dark' ? '라이트' : '다크';
+  syncTheme();
 }
 
 // ─────────────────────────────────────────────
@@ -1511,17 +1523,11 @@ function showToast(msg) {
 // Init
 // ─────────────────────────────────────────────
 (function init() {
-  // Theme: respect saved preference, otherwise follow system
-  const saved = localStorage.getItem('theme');
-  if (saved === 'dark' || saved === 'light') {
-    applyTheme(saved);
-  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    applyTheme('dark');
-  }
-  // Live-follow system if user hasn't set explicit preference
+  // Theme: auto (system) unless user has explicitly set light/dark
+  syncTheme();
   if (window.matchMedia) {
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-      if (!localStorage.getItem('theme')) applyTheme(e.matches ? 'dark' : 'light');
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (!localStorage.getItem('theme')) syncTheme();
     });
   }
 
